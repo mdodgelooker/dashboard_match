@@ -24,43 +24,41 @@
 
  */
 
-import React, { useMemo, useState } from 'react'
-import type { IDashboard } from '@looker/sdk'
-import type { SelectOptionObject } from '@looker/components'
-import { FieldSelect } from '@looker/components'
+import React, { useMemo, useState } from "react";
+import type { IDashboard } from "@looker/sdk";
+import type { SelectOptionObject } from "@looker/components";
+import { FieldSelect } from "@looker/components";
 
 interface DashboardListProps {
-  dashboards: IDashboard[]
-  current?: string
-  loading: boolean
-  selectDashboard: (id: string) => void
+  dashboards: IDashboard[];
+  current?: string;
+  loading: boolean;
+  selectDashboard: (id: string) => void;
 }
 
 export const DashboardList = ({
-  current = '',
+  current = "",
   loading,
   dashboards,
   selectDashboard,
 }: DashboardListProps) => {
-  const [filter, setFilter] = useState('')
+  const [filter, setFilter] = useState("");
   const options = useMemo(
     () =>
       dashboards.reduce(
         (acc: SelectOptionObject[], { id, title }: IDashboard) => {
           if (id && title?.toUpperCase().includes(filter.toUpperCase())) {
-            acc = [...acc, { label: title, value: id }]
+            acc = [...acc, { label: title, value: id }];
           }
-          return acc
+          return acc;
         },
         []
       ),
     [dashboards, filter]
-  )
+  );
 
   return (
     <FieldSelect
-      label="Select a Dashboard"
-      inline={window.innerWidth > 768}
       isLoading={loading}
       options={options}
       value={current}
@@ -68,5 +66,5 @@ export const DashboardList = ({
       isFilterable
       onFilter={setFilter}
     />
-  )
-}
+  );
+};
