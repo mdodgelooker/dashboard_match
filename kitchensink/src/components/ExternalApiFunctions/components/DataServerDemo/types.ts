@@ -2,7 +2,7 @@
 
  MIT License
 
- Copyright (c) 2021 Looker Data Sciences, Inc.
+ Copyright (c) 2022 Looker Data Sciences, Inc.
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,12 +24,10 @@
 
  */
 
-module.exports = api => {
-  api.cache.forever()
-  return {
-    presets: [
-      require('@looker/babel-preset-react'),
-      require('@looker/babel-preset-typescript'),
-    ],
-  }
+import type { Dispatch } from 'react'
+import type { DataState } from '../../data/DataReducer'
+
+export interface DataServerDemoProps {
+  dataState: DataState
+  dataDispatch: Dispatch<any>
 }

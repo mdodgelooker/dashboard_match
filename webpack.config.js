@@ -1,71 +1,85 @@
 /*
-
- MIT License
-
- Copyright (c) 2021 Looker Data Sciences, Inc.
-
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included in all
- copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- SOFTWARE.
-
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2019 Looker Data Sciences, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires */
+const fs = require('fs')
 const path = require('path')
-const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin')
-/* eslint-enable @typescript-eslint/no-var-requires */
+const webpack = require('webpack')
+const dotenv = require('dotenv')
 
-module.exports = (env, args) => {
-  // There is no built-in way to definitively detect hot-loading from
-  // babel-loader, so we set an environment variable here to be read from
-  // packages/babel-preset-react/index.js and apps/web/.babelrc.js
-  // https://github.com/webpack/webpack-cli/issues/3599
-  if (env.WEBPACK_SERVE && args.hot !== false) {
-    process.env.LOOKER_WEBPACK_HOT = 'true'
-  }
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer')
+  .BundleAnalyzerPlugin
 
-  return {
-    devtool: 'source-map',
-    entry: {
-      bundle: path.join(__dirname, 'src/index.tsx'),
-    },
-    module: {
-      rules: [
-        {
-          loader: 'babel-loader',
-          options: {
-            rootMode: 'upward',
-            // c.f. https://github.com/babel/babel/issues/14873
-            targets: 'extends @looker/browserslist-config',
-          },
-          test: /\.tsx?$/,
-        },
-      ],
-    },
-    output: {
-      filename: 'bundle.js',
-      path: path.join(__dirname, 'dist'),
-    },
-    plugins: [
-      process.env.LOOKER_WEBPACK_HOT && new ReactRefreshWebpackPlugin(),
-    ].filter(Boolean),
-    resolve: {
-      extensions: ['.tsx', '.ts', '.js'],
-      mainFields: ['src', 'browser', 'module', 'main'],
-    },
-  }
+// Create .env file if it does not exist
+if (!fs.existsSync('.env')) {
+  fs.copyFileSync('.env_example', '.env')
+}
+dotenv.config()
+if (!process.env.POSTS_SERVER_URL) {
+  // webpack 5 is stricter about environment variables. The POSTS_SERVER_URL
+  // environment variable was not mentioned in the README so default it for
+  // those developers who may have created a .env file without the variable.
+  process.env.POSTS_SERVER_URL = 'http://127.0.0.1:3000'
+}
+
+const PATHS = {
+  app: path.join(__dirname, 'src/index.tsx'),
+}
+
+module.exports = {
+  entry: {
+    app: PATHS.app,
+  },
+  output: {
+    path: __dirname + '/dist',
+    filename: 'bundle.js',
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(js|jsx|ts|tsx)$/,
+        loader: 'babel-loader',
+        exclude: /node_modules/,
+        include: /src/,
+        sideEffects: false,
+      },
+    ],
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+    fallback: { buffer: false },
+  },
+  devtool: 'source-map',
+  plugins: [
+    new BundleAnalyzerPlugin({
+      analyzerMode: process.env.ANALYZE_MODE || 'disabled',
+    }),
+    new webpack.EnvironmentPlugin([
+      'GOOGLE_CLIENT_ID',
+      'GITHUB_CLIENT_ID',
+      'AUTH0_CLIENT_ID',
+      'AUTH0_BASE_URL',
+      'POSTS_SERVER_URL',
+    ]),
+  ],
 }

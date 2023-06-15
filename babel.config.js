@@ -22,12 +22,47 @@
  * THE SOFTWARE.
  */
 
-const commonConfig = require('./webpack.config')
+module.exports = (api) => {
+  api.cache(true)
 
-module.exports = {
-  ...commonConfig,
-  mode: 'production',
-  optimization: {
-    chunkIds: 'named',
-  },
+  return {
+    presets: [
+      [
+        '@babel/env',
+        {
+          targets: {
+            esmodules: true,
+          },
+          modules: false,
+        },
+      ],
+      [
+        '@babel/preset-react',
+        {
+          development: process.env.BABEL_ENV !== 'build',
+        },
+      ],
+      '@babel/preset-typescript',
+    ],
+    env: {
+      build: {
+        ignore: [
+          '**/*.d.ts',
+          '**/*.test.js',
+          '**/*.test.jsx',
+          '**/*.test.ts',
+          '**/*.test.tsx',
+          '__snapshots__',
+          '__tests__',
+        ],
+      },
+    },
+    ignore: ['node_modules'],
+    plugins: [
+      '@babel/plugin-proposal-class-properties',
+      '@babel/plugin-proposal-object-rest-spread',
+      '@babel/plugin-transform-runtime',
+      'babel-plugin-styled-components',
+    ],
+  }
 }
