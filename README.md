@@ -1,10 +1,4 @@
-# IMPORTANT NOTE - PLEASE READ
-
-This version and versions going forward demonstrate the use of code splitting. You must be on Looker version 21.0 or above for code splitting to work correctly.
-
-To remove code splitting you will need to modify `KitchenSink.tsx`. Instructions are provided in this file to show how to fall back to building a single monolithic JavaScript bundle.
-
-# Looker AI Dashboard Match
+# Looker Recommended Dashboards with AI
 
 This app demonstrates how you could use a language model and embeddings to get recommended dashboards for a natural language query.
 
