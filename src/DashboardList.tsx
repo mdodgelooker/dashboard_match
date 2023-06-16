@@ -24,8 +24,7 @@
 
  */
 
-import React, { useMemo, useState } from 'react'
-import type { SelectOptionObject } from '@looker/components'
+import React from 'react'
 import { List, ListItem, Heading, SpaceVertical } from '@looker/components'
 import { Similarity } from './dashboardData'
 
@@ -40,6 +39,7 @@ export const DashboardList = ({
   dashboards,
   selectDashboard,
 }: DashboardListProps) => {
+  console.log({ current, dashboards })
   return (
     <SpaceVertical>
       <Heading as="h3">Recommended Dashboards</Heading>
@@ -49,6 +49,7 @@ export const DashboardList = ({
             onClick={() => selectDashboard(id)}
             key={id}
             description={summary}
+            selected={id === current}
           >
             {index + 1}. {title}
           </ListItem>

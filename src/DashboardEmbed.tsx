@@ -52,18 +52,13 @@ export const DashboardEmbed = ({ dashboardId }: DashboardEmbedProps) => {
       LookerEmbedSDK.init(hostUrl)
       LookerEmbedSDK.createDashboardWithId(dashboardId)
         .withNext()
-        // This can be removed if using a theme that has this setting
-        // .withParams({ _theme: '{"show_filters_bar": false}' })
         .appendTo(el)
-        // .on("dashboard:filters:changed", updateFilters.bind(null))
-        // .on("dashboard:run:complete", updateFilters.bind(null))
         .on('drillmenu:click', canceller)
         .on('drillmodal:explore', canceller)
         .on('dashboard:tile:explore', canceller)
         .on('dashboard:tile:view', canceller)
         .build()
         .connect()
-        // .then(setEmbedDashboard)
         .catch((error: Error) => {
           // @TODO - This should probably throw a visible error
           // eslint-disable-next-line no-console

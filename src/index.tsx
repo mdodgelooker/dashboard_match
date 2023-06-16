@@ -24,37 +24,35 @@
 
  */
 
-import React from "react";
-import ReactDOM from "react-dom";
-import { ExtensionProvider } from "@looker/extension-sdk-react";
-import { ComponentsProvider, Spinner, Flex } from "@looker/components";
-import { i18nResources } from "@looker/filter-components";
-import { App } from "./App";
+import React from 'react'
+import ReactDOM from 'react-dom'
+import { ExtensionProvider } from '@looker/extension-sdk-react'
+import { ComponentsProvider, Spinner, Flex } from '@looker/components'
+import { App } from './App'
 
 const getRoot = () => {
-  const id = "extension-root";
-  const existingRoot = document.getElementById(id);
-  if (existingRoot) return existingRoot;
-  const root = document.createElement("div");
-  root.setAttribute("id", id);
-  root.style.height = "100vh";
-  root.style.display = "flex";
-  document.body.style.margin = "0";
-  document.body.appendChild(root);
-  return root;
-};
+  const id = 'extension-root'
+  const existingRoot = document.getElementById(id)
+  if (existingRoot) return existingRoot
+  const root = document.createElement('div')
+  root.setAttribute('id', id)
+  root.style.height = '100vh'
+  root.style.display = 'flex'
+  document.body.style.margin = '0'
+  document.body.appendChild(root)
+  return root
+}
 
 const render = (Component: typeof App) => {
-  const root = getRoot();
+  const root = getRoot()
   const loading = (
     <Flex width="100%" height="90%" alignItems="center" justifyContent="center">
       <Spinner color="black" />
     </Flex>
-  );
+  )
 
   ReactDOM.render(
     <ComponentsProvider
-      resources={i18nResources}
       themeCustomizations={{ defaults: { externalLabel: false } }}
     >
       <ExtensionProvider
@@ -65,18 +63,18 @@ const render = (Component: typeof App) => {
       </ExtensionProvider>
     </ComponentsProvider>,
     root
-  );
-};
+  )
+}
 
-window.addEventListener("DOMContentLoaded", async () => {
-  render(App);
-});
+window.addEventListener('DOMContentLoaded', async () => {
+  render(App)
+})
 
 // Allow hot module reload
 if (module.hot) {
-  module.hot.accept("./App.tsx", () => {
+  module.hot.accept('./App.tsx', () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const NextApp = require("./App.tsx").default;
-    render(NextApp);
-  });
+    const NextApp = require('./App.tsx').default
+    render(NextApp)
+  })
 }
