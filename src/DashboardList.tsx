@@ -39,21 +39,32 @@ export const DashboardList = ({
   dashboards,
   selectDashboard,
 }: DashboardListProps) => {
-  console.log({ current, dashboards })
   return (
     <SpaceVertical>
       <Heading as="h3">Recommended Dashboards</Heading>
       <List width="100%">
-        {dashboards.map(({ id, metadata: { title }, summary }, index) => (
-          <ListItem
-            onClick={() => selectDashboard(id)}
-            key={id}
-            description={summary}
-            selected={id === current}
-          >
-            {index + 1}. {title}
-          </ListItem>
-        ))}
+        {dashboards.map(({ id, metadata, summary }, index) => {
+          const { elementId, elementTitle, title } = metadata
+          const bestElement = elementTitle || elementId
+          const description = (
+            <>
+              {bestElement ? <strong>Best element: </strong> : null}
+              {bestElement}
+              {bestElement ? <br /> : null}
+              {summary}
+            </>
+          )
+          return (
+            <ListItem
+              onClick={() => selectDashboard(id)}
+              key={id}
+              description={description}
+              selected={id === current}
+            >
+              {index + 1}. {title}
+            </ListItem>
+          )
+        })}
       </List>
     </SpaceVertical>
   )

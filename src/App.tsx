@@ -43,7 +43,10 @@ import { useLocation, useHistory } from 'react-router-dom'
 import { DashboardList } from './DashboardList'
 import { DashboardEmbed } from './DashboardEmbed'
 import { reducer, initialState } from './state'
-import { loadDashboardEmbeddings, getMatchingDashboards } from './dashboardData'
+import {
+  loadDashboardEmbeddings,
+  getMatchingDashboardElements,
+} from './dashboardData'
 
 const AppInternal = () => {
   const [state, dispatch] = useReducer(reducer, initialState)
@@ -119,7 +122,11 @@ const AppInternal = () => {
 
   const handleSubmit = async () => {
     dispatch({ type: 'MATCHES_LOAD' })
-    const matches = await getMatchingDashboards({ query, embeddings, top: 3 })
+    const matches = await getMatchingDashboardElements({
+      query,
+      embeddings,
+      top: 3,
+    })
     if (typeof matches !== 'string') {
       dispatch({ type: 'MATCHES_COMPLETE', payload: { matches } })
     }

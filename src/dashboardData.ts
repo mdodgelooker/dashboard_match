@@ -17,22 +17,54 @@ const getAllDashboardId = async (sdk: Looker40SDK): Promise<string[]> => {
 }
 
 export interface DashboardMetadata {
-  dashboardId: string
+  id: string
   title?: string | null
   description?: string | null
 }
 
-const getDashboardMetadata = async (
+export interface DashboardElementMetadata {
+  elementId?: string
+  dashboardId: string
+  bodyText: any[]
+  noteText?: string | null
+  subtitleText?: string | null
+  elementTitle?: string | null
+  filterables: Array<string | null | undefined>
+}
+
+export interface MetaData
+  extends DashboardMetadata,
+    Partial<DashboardElementMetadata> {
+  elements?: DashboardElementMetadata[]
+}
+
+const getDashboardAndElementMetadata = async (
   sdk: Looker40SDK,
   dashboardId: string
-): Promise<DashboardMetadata | undefined> => {
+): Promise<MetaData[] | undefined> => {
   try {
     const dashboard = await sdk.ok(sdk.dashboard(dashboardId))
-    return {
-      dashboardId: dashboard.id || dashboardId,
+    const dashboardMetadata = {
+      id: dashboard.id || dashboardId,
       title: dashboard.title,
       description: dashboard.description,
     }
+    const dashElements = dashboard.dashboard_elements
+    if (dashElements && dashElements.length > 0) {
+      return dashElements.map((dashElement) => ({
+        ...dashboardMetadata,
+        dashboardId: dashboardId,
+        elementId: dashElement.id,
+        bodyText: dashElement.body_text
+          ? extractTextFromBodyText(dashElement.body_text)
+          : [],
+        noteText: dashElement.note_text,
+        subtitleText: dashElement.subtitle_text,
+        elementTitle: dashElement.title,
+        filterables: extractFilterables(dashElement),
+      }))
+    }
+    return [dashboardMetadata]
   } catch (error) {
     return undefined
   }
@@ -74,60 +106,6 @@ const extractTextFromBodyText = (bodyText: string) => {
     return x.length > 0
   })
 }
-const getLookerDashboardElements = async (
-  sdk: Looker40SDK,
-  dashboardId: string
-) => {
-  try {
-    const resp = await sdk.ok(sdk.dashboard_dashboard_elements(dashboardId))
-    return resp
-  } catch (error) {
-    return []
-  }
-}
-
-export interface DashboardElementMetadata {
-  dashboardId: string
-  bodyText: any[]
-  noteText?: string | null
-  subtitleText?: string | null
-  elementTitle?: string | null
-  filterables: Array<string | null | undefined>
-}
-
-const getDashboardElementMetadata = async (
-  sdk: Looker40SDK,
-  dashboardId: string
-): Promise<DashboardElementMetadata[]> => {
-  const dashElements = await getLookerDashboardElements(sdk, dashboardId)
-
-  return dashElements.map((dashElement) => ({
-    dashboardId: dashboardId,
-    bodyText: dashElement.body_text
-      ? extractTextFromBodyText(dashElement.body_text)
-      : [],
-    noteText: dashElement.note_text,
-    subtitleText: dashElement.subtitle_text,
-    elementTitle: dashElement.title,
-    filterables: extractFilterables(dashElement),
-  }))
-}
-
-export interface MetaData extends DashboardMetadata {
-  elements: DashboardElementMetadata[]
-}
-
-const getDashboardAndElementMetadata = async (
-  sdk: Looker40SDK,
-  id: string
-): Promise<MetaData | undefined> => {
-  const dashboardMetadata = await getDashboardMetadata(sdk, id)
-  if (dashboardMetadata) {
-    const elementMetadata = await getDashboardElementMetadata(sdk, id)
-    return { ...dashboardMetadata, elements: elementMetadata }
-  }
-  return undefined
-}
 
 export interface StoredEmbedding {
   id: string
@@ -135,18 +113,22 @@ export interface StoredEmbedding {
   metadata: MetaData
 }
 
-const getDashboardEmbedding = async (
+const getElementEmbeddings = async (
   sdk: Looker40SDK,
   id: string
-): Promise<StoredEmbedding | undefined> => {
-  const data = await getDashboardAndElementMetadata(sdk, id)
-  if (data) {
-    const result = await embedText(JSON.stringify(data))
-    if (typeof result !== 'string') {
-      if (result?.embedding.value) {
-        return { id, embedding: result.embedding.value, metadata: data }
-      }
-    }
+): Promise<StoredEmbedding[] | undefined> => {
+  const metadataArray = await getDashboardAndElementMetadata(sdk, id)
+  if (metadataArray) {
+    return Promise.all(
+      metadataArray.map(async (data) => {
+        const result = await embedText(JSON.stringify(data))
+        if (typeof result === 'string' || !result?.embedding.value) {
+          return {} as StoredEmbedding
+        } else {
+          return { id, embedding: result.embedding.value, metadata: data }
+        }
+      })
+    )
   }
   return undefined
 }
@@ -160,9 +142,9 @@ export const loadDashboardEmbeddings = async (sdk: Looker40SDK) => {
   const dashboardEmbeddings = await pReduce(
     allDashboardId,
     async (acc: StoredEmbedding[], id) => {
-      const result = await getDashboardEmbedding(sdk, id)
+      const result = await getElementEmbeddings(sdk, id)
       if (result) {
-        acc.push(result)
+        return acc.concat(result)
       }
       return acc
     },
@@ -200,12 +182,10 @@ const cosineSimilarity = (A: number[], B: number[]) => {
 }
 
 const getSummary = async (metadata: MetaData) => {
-  console.log({ metadata })
   const prompt = `${JSON.stringify(metadata)}
   Summarize these dashboard elements {query_list} as a prose description of dashboard intent, in 100 words or less, the first element is always the dashboard title.
   `
   const result = await generateText(prompt)
-  console.log(result)
   return result.candidates[0].output
 }
 
@@ -214,7 +194,7 @@ export interface Similarity extends Omit<StoredEmbedding, 'embedding'> {
   summary?: string
 }
 
-export const getMatchingDashboards = async ({
+export const getMatchingDashboardElements = async ({
   query,
   embeddings,
   top,
@@ -231,8 +211,19 @@ export const getMatchingDashboards = async ({
     return { id, metadata, similarity }
   })
   similarities.sort((a, b) => b.similarity - a.similarity)
+  let num = 1
+  let index = 1
+  const similaritiesToUse = [similarities[0]]
+  while (num < top) {
+    const item = similarities[index]
+    index++
+    if (similaritiesToUse.every((sim) => sim.id !== item.id)) {
+      similaritiesToUse.push(item)
+      num++
+    }
+  }
   return Promise.all(
-    similarities.slice(0, top).map(async (item) => {
+    similaritiesToUse.map(async (item) => {
       const summary = await getSummary(item.metadata)
       return { ...item, summary }
     })
