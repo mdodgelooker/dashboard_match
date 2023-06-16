@@ -52,23 +52,28 @@ const extractFilterables = (dashboardElementMetadata: IDashboardElement) => {
   return filterables
 }
 
+interface BodyText {
+  type: string
+  children: Array<{ text: string }>
+}
+
 const extractTextFromBodyText = (bodyText: string) => {
   const response = []
   if (bodyText) {
     try {
-      for (const text of JSON.parse(bodyText)) {
-        const r = text.get('children')[0].get('text')
+      const parsed: BodyText[] = JSON.parse(bodyText)
+      for (const text of parsed) {
+        const r = text.children[0].text
         response.push(r)
       }
     } catch (e) {
-      console.warn('xx')
+      console.warn('Error parsing body text')
     }
   }
   return response.filter((x) => {
     return x.length > 0
   })
 }
-
 const getLookerDashboardElements = async (
   sdk: Looker40SDK,
   dashboardId: string
@@ -95,7 +100,6 @@ const getDashboardElementMetadata = async (
   dashboardId: string
 ): Promise<DashboardElementMetadata[]> => {
   const dashElements = await getLookerDashboardElements(sdk, dashboardId)
-  console.log(dashElements)
 
   return dashElements.map((dashElement) => ({
     dashboardId: dashboardId,
@@ -196,8 +200,9 @@ const cosineSimilarity = (A: number[], B: number[]) => {
 }
 
 const getSummary = async (metadata: MetaData) => {
+  console.log({ metadata })
   const prompt = `${JSON.stringify(metadata)}
-  Summarize this data in one sentence:
+  Summarize these dashboard elements {query_list} as a prose description of dashboard intent, in 100 words or less, the first element is always the dashboard title.
   `
   const result = await generateText(prompt)
   console.log(result)
