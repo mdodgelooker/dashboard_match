@@ -53,7 +53,10 @@ const render = (Component: typeof App) => {
 
   ReactDOM.render(
     <ComponentsProvider
-      themeCustomizations={{ defaults: { externalLabel: false } }}
+      themeCustomizations={{
+        colors: { key: '#1A73E8' },
+        defaults: { externalLabel: false },
+      }}
     >
       <ExtensionProvider
         loadingComponent={loading}
