@@ -24,85 +24,98 @@
 
  */
 
-import type { Reducer } from "react";
-import type { IDashboard } from "@looker/sdk";
-import type { LookerEmbedDashboard } from "@looker/embed-sdk";
+import type { Reducer } from 'react'
+import type { IDashboard } from '@looker/sdk'
+import type { StoredEmbedding, Similarity } from './dashboardData'
 
 export type DashboardMatchAction = {
   type:
-    | "LOADING_DEMO"
-    | "LOAD_DASHBOARD"
-    | "COMPLETE_DASHBOARDS_LOAD"
-    | "FAIL_DASHBOARDS_LOAD"
-    | "FAIL_TO_FIND_DASHBOARD"
-    | "SET_SELECTED_DASHBOARD_ID"
-    | "SET_STATE";
-  payload?: Partial<DashboardMatchState>;
-};
+    | 'EMBEDDINGS_LOAD'
+    | 'EMBEDDINGS_READY'
+    | 'EMBEDDINGS_FAIL'
+    | 'MATCHES_LOAD'
+    | 'MATCHES_COMPLETE'
+    | 'MATCHES_FAIL'
+    | 'MATCHES_LOAD'
+    | 'FAIL_TO_FIND_DASHBOARD'
+    | 'SET_SELECTED_DASHBOARD_ID'
+    | 'SET_STATE'
+  payload?: Partial<DashboardMatchState>
+}
 
 export type DashboardMatchState = {
-  currentDashboard?: IDashboard;
-  dashboards: IDashboard[];
-  embedDashboard?: LookerEmbedDashboard;
-  errorMessage: string;
-  loadingDashboards: boolean;
-  selectedDashboardId?: string;
-};
+  loadingEmbeddings: boolean
+  embeddings: StoredEmbedding[]
+  query: string
+  loadingMatches: boolean
+  matches: Similarity[]
+  selectedDashboardId?: string
+  currentDashboard?: IDashboard
+  errorMessage: string
+}
 
 export const initialState: DashboardMatchState = {
-  currentDashboard: undefined,
-  dashboards: [],
-  // Used to update and get current filter values
-  embedDashboard: undefined,
-  errorMessage: "",
-  loadingDashboards: false,
+  loadingEmbeddings: false,
+  embeddings: [],
+  query: '',
+  loadingMatches: false,
+  matches: [],
   selectedDashboardId: undefined,
-};
+  currentDashboard: undefined,
+  errorMessage: '',
+}
 
 export const reducer: Reducer<DashboardMatchState, DashboardMatchAction> = (
   state = initialState,
   action
 ) => {
   switch (action.type) {
-    case "LOADING_DEMO":
+    case 'EMBEDDINGS_LOAD':
       return {
         ...state,
-        errorMessage: "",
-        loadingDashboards: true,
-      };
-    case "COMPLETE_DASHBOARDS_LOAD":
+        errorMessage: '',
+        loadingEmbeddings: true,
+      }
+    case 'EMBEDDINGS_READY':
       return {
         ...state,
-        dashboards: action.payload?.dashboards || [],
-        loadingDashboards: false,
-      };
-    case "FAIL_DASHBOARDS_LOAD":
+        loadingEmbeddings: false,
+        embeddings: action.payload?.embeddings || [],
+      }
+    case 'EMBEDDINGS_FAIL':
       return {
         ...state,
-        dashboards: [],
-        errorMessage: "Error loading dashboards",
-        loadingDashboards: false,
-      };
-    case "FAIL_TO_FIND_DASHBOARD":
+        errorMessage: 'Error loading embeddings',
+        loadingEmbeddings: false,
+        embeddings: [],
+      }
+    case 'MATCHES_LOAD':
+      return {
+        ...state,
+        loadingMatches: true,
+        matches: [],
+        errorMessage: '',
+      }
+    case 'MATCHES_COMPLETE':
+      return {
+        ...state,
+        loadingMatches: false,
+        matches: action.payload?.matches || [],
+      }
+    case 'FAIL_TO_FIND_DASHBOARD':
       return {
         ...state,
         currentDashboard: undefined,
-        errorMessage: "Unable to load dashboard.",
+        errorMessage: 'Unable to load dashboard.',
         selectedDashboardId: undefined,
-      };
-    case "LOAD_DASHBOARD":
-      return {
-        ...state,
-        currentDashboard: action.payload?.currentDashboard,
-        errorMessage: "",
-      };
+      }
     // Handles all one-off state piece setting
-    case "SET_STATE":
+    case 'SET_STATE':
       return {
         ...state,
         ...action.payload,
-      };
+      }
     default:
-      return state;
+      return state
   }
-};
+}

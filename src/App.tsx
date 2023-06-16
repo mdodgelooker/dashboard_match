@@ -24,129 +24,106 @@
 
  */
 
-import React, { useContext, useEffect, useState, useReducer } from "react";
-import { hot } from "react-hot-loader/root";
+import React, { useContext, useEffect, useReducer } from 'react'
+import { hot } from 'react-hot-loader/root'
 import {
   Box,
+  Button,
   MessageBar,
   Header,
-  Heading,
   Page,
   Space,
   SpaceVertical,
-  Spinner,
+  ProgressCircular,
   FieldText,
-} from "@looker/components";
-import type { LookerEmbedDashboard } from "@looker/embed-sdk";
-import { ExtensionContext } from "@looker/extension-sdk-react";
-import { i18nInit } from "@looker/filter-components";
-import type { IDashboard } from "@looker/sdk";
-import { useLocation, useHistory } from "react-router-dom";
-import { DashboardList } from "./DashboardList";
-import { DashboardEmbed } from "./DashboardEmbed";
-import { reducer, initialState } from "./state";
-
-const i18nPromise = i18nInit();
+} from '@looker/components'
+import { ExtensionContext } from '@looker/extension-sdk-react'
+import type { ChangeEvent } from 'react'
+import { useLocation, useHistory } from 'react-router-dom'
+import { DashboardList } from './DashboardList'
+import { DashboardEmbed } from './DashboardEmbed'
+import { reducer, initialState } from './state'
+import { loadDashboardEmbeddings, getMatchingDashboards } from './dashboardData'
 
 const AppInternal = () => {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialState)
   const {
-    currentDashboard,
-    dashboards,
-    // embedDashboard,
-    errorMessage,
-    loadingDashboards,
+    loadingEmbeddings,
+    embeddings,
+    query,
+    loadingMatches,
     selectedDashboardId,
-  } = state;
+    matches,
+    errorMessage,
+  } = state
 
-  const { core40SDK } = useContext(ExtensionContext);
-  const horizontal = window.innerWidth > 768;
-  const HeaderSpace = horizontal ? Space : SpaceVertical;
+  const { core40SDK } = useContext(ExtensionContext)
 
   useEffect(() => {
     dispatch({
-      type: "LOADING_DEMO",
-    });
-    const loadDashboards = async () => {
+      type: 'EMBEDDINGS_LOAD',
+    })
+    const loadEmbeddings = async () => {
       try {
-        const result = (await core40SDK.ok(
-          core40SDK.all_dashboards()
-        )) as IDashboard[];
-
+        const result = await loadDashboardEmbeddings(core40SDK)
         dispatch({
-          payload: {
-            dashboards: result.sort(
-              ({ title: aTitle = "" }, { title: bTitle = "" }) =>
-                (aTitle as string).localeCompare(bTitle as string)
-            ),
-          },
-          type: "COMPLETE_DASHBOARDS_LOAD",
-        });
+          type: 'EMBEDDINGS_READY',
+          payload: { embeddings: result },
+        })
       } catch (error) {
         dispatch({
-          type: "FAIL_DASHBOARDS_LOAD",
-        });
+          type: 'EMBEDDINGS_FAIL',
+        })
       }
-    };
-    loadDashboards();
-  }, [core40SDK]);
+    }
+    loadEmbeddings()
+  }, [core40SDK])
 
-  const { pathname } = useLocation();
-  const history = useHistory();
+  const { pathname } = useLocation()
+  const history = useHistory()
   useEffect(() => {
-    if (dashboards && dashboards.length > 0) {
+    if (matches && matches.length > 0) {
       // Get the dashboard ID from the location
-      const path: string[] = pathname.split("/");
-      let id: string | undefined;
-      if (path.length > 1 && path[1] !== "") {
-        id = path[1];
+      const path: string[] = pathname.split('/')
+      let id: string | undefined
+      if (path.length > 1 && path[1] !== '') {
+        id = path[1]
       }
       if (id && id !== selectedDashboardId) {
-        dispatch({ payload: { selectedDashboardId: id }, type: "SET_STATE" });
+        dispatch({ payload: { selectedDashboardId: id }, type: 'SET_STATE' })
       }
     }
-  }, [dashboards, history, pathname, selectedDashboardId]);
-
-  useEffect(() => {
-    const dashboard = (dashboards || []).find(
-      (d) => d.id === selectedDashboardId
-    );
-    const loadDashboard = async (id: string) => {
-      const result = (await core40SDK.ok(
-        core40SDK.dashboard(id)
-      )) as IDashboard;
-      dispatch({ payload: { currentDashboard: result }, type: "SET_STATE" });
-    };
-    // If no matching Dashboard then return
-    if (selectedDashboardId && dashboard === undefined) {
-      dispatch({ type: "FAIL_TO_FIND_DASHBOARD" });
-    } else {
-      dispatch({
-        payload: { currentDashboard: dashboard },
-        type: "LOAD_DASHBOARD",
-      });
-      if (selectedDashboardId) {
-        loadDashboard(selectedDashboardId);
-      }
-    }
-  }, [core40SDK, dashboards, selectedDashboardId]);
+  }, [matches, history, pathname, selectedDashboardId])
 
   const onDashboardSelected = (id: string) => {
-    if (!currentDashboard || currentDashboard.id !== id) {
+    if (!selectedDashboardId || selectedDashboardId !== id) {
       // Update the id in the URL. This will trigger the useEffects
       // which will load the dashboard
-      history.push("/" + id);
+      history.push('/' + id)
     }
-  };
+  }
 
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    i18nPromise.then(() => {
-      setReady(true);
-    });
-  }, []);
+  if (loadingEmbeddings)
+    return (
+      <Box p="large" display="flex" justifyContent="center" alignItems="center">
+        <ProgressCircular size="large" />
+      </Box>
+    )
 
-  if (!ready) return <Spinner />;
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    dispatch({
+      type: 'SET_STATE',
+      payload: { query: e.currentTarget.value },
+    })
+  }
+
+  const handleSubmit = async () => {
+    dispatch({ type: 'MATCHES_LOAD' })
+    const matches = await getMatchingDashboards({ query, embeddings, top: 3 })
+    if (typeof matches !== 'string') {
+      dispatch({ type: 'MATCHES_COMPLETE', payload: { matches } })
+    }
+  }
 
   return (
     <Page height="100%">
@@ -155,31 +132,33 @@ const AppInternal = () => {
       )}
       <Header
         py="large"
-        px={["medium", "medium", "large", "large", "xxxlarge", "xxxlarge"]}
+        px={['medium', 'medium', 'large', 'large', 'xxxlarge', 'xxxlarge']}
       >
-        <HeaderSpace>
-          <FieldText label="I'm looking for a dashboard that:" />
-          <Box flexShrink={0}>
-            <Heading as="h4">Recommended Dashboard:</Heading>
-          </Box>
-          <DashboardList
-            dashboards={dashboards}
-            loading={loadingDashboards}
-            selectDashboard={onDashboardSelected}
-            current={currentDashboard?.id}
-          />
-        </HeaderSpace>
+        <SpaceVertical>
+          <Space align="end">
+            <FieldText
+              label="Find me a dashboard with..."
+              value={query}
+              onChange={handleChange}
+              width={window.innerWidth > 768 ? '50%' : 'auto'}
+            />
+            <Button onClick={handleSubmit}>Go</Button>
+          </Space>
+          {loadingMatches && <ProgressCircular />}
+          {matches.length > 0 && (
+            <DashboardList
+              dashboards={matches}
+              selectDashboard={onDashboardSelected}
+              current={selectedDashboardId}
+            />
+          )}
+        </SpaceVertical>
       </Header>
-      {currentDashboard?.id && (
-        <DashboardEmbed
-          dashboardId={currentDashboard.id}
-          setEmbedDashboard={(embedDashboard: LookerEmbedDashboard) =>
-            dispatch({ payload: { embedDashboard }, type: "SET_STATE" })
-          }
-        />
+      {selectedDashboardId && (
+        <DashboardEmbed dashboardId={selectedDashboardId} />
       )}
     </Page>
-  );
-};
+  )
+}
 
-export const App = hot(AppInternal);
+export const App = hot(AppInternal)

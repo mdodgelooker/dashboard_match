@@ -27,8 +27,8 @@ const path = require('path')
 const webpack = require('webpack')
 const dotenv = require('dotenv')
 
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer')
-  .BundleAnalyzerPlugin
+const BundleAnalyzerPlugin =
+  require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
 // Create .env file if it does not exist
 if (!fs.existsSync('.env')) {
@@ -80,6 +80,7 @@ module.exports = {
       'AUTH0_CLIENT_ID',
       'AUTH0_BASE_URL',
       'POSTS_SERVER_URL',
+      'GOOGLE_API_KEY',
     ]),
   ],
 }

@@ -24,47 +24,36 @@
 
  */
 
-import React, { useMemo, useState } from "react";
-import type { IDashboard } from "@looker/sdk";
-import type { SelectOptionObject } from "@looker/components";
-import { FieldSelect } from "@looker/components";
+import React, { useMemo, useState } from 'react'
+import type { SelectOptionObject } from '@looker/components'
+import { List, ListItem, Heading, SpaceVertical } from '@looker/components'
+import { Similarity } from './dashboardData'
 
 interface DashboardListProps {
-  dashboards: IDashboard[];
-  current?: string;
-  loading: boolean;
-  selectDashboard: (id: string) => void;
+  dashboards: Similarity[]
+  current?: string
+  selectDashboard: (id: string) => void
 }
 
 export const DashboardList = ({
-  current = "",
-  loading,
+  current = '',
   dashboards,
   selectDashboard,
 }: DashboardListProps) => {
-  const [filter, setFilter] = useState("");
-  const options = useMemo(
-    () =>
-      dashboards.reduce(
-        (acc: SelectOptionObject[], { id, title }: IDashboard) => {
-          if (id && title?.toUpperCase().includes(filter.toUpperCase())) {
-            acc = [...acc, { label: title, value: id }];
-          }
-          return acc;
-        },
-        []
-      ),
-    [dashboards, filter]
-  );
-
   return (
-    <FieldSelect
-      isLoading={loading}
-      options={options}
-      value={current}
-      onChange={selectDashboard}
-      isFilterable
-      onFilter={setFilter}
-    />
-  );
-};
+    <SpaceVertical>
+      <Heading as="h3">Recommended Dashboards</Heading>
+      <List width="100%">
+        {dashboards.map(({ id, metadata: { title }, summary }, index) => (
+          <ListItem
+            onClick={() => selectDashboard(id)}
+            key={id}
+            description={summary}
+          >
+            {index + 1}. {title}
+          </ListItem>
+        ))}
+      </List>
+    </SpaceVertical>
+  )
+}

@@ -24,37 +24,32 @@
 
  */
 
-import React, { useContext, useRef, useEffect } from "react";
-import styled from "styled-components";
-import { Layout } from "@looker/components";
-import type { LookerEmbedDashboard } from "@looker/embed-sdk";
-import { LookerEmbedSDK } from "@looker/embed-sdk";
-import { ExtensionContext } from "@looker/extension-sdk-react";
+import React, { useContext, useRef, useEffect } from 'react'
+import styled from 'styled-components'
+import { Layout } from '@looker/components'
+import { LookerEmbedSDK } from '@looker/embed-sdk'
+import { ExtensionContext } from '@looker/extension-sdk-react'
 
 export interface DashboardEmbedProps {
-  dashboardId: string;
-  setEmbedDashboard: (embedDashboard: LookerEmbedDashboard) => void;
+  dashboardId: string
 }
 
-export const DashboardEmbed = ({
-  dashboardId,
-  setEmbedDashboard,
-}: DashboardEmbedProps) => {
-  const { extensionSDK } = useContext(ExtensionContext);
+export const DashboardEmbed = ({ dashboardId }: DashboardEmbedProps) => {
+  const { extensionSDK } = useContext(ExtensionContext)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const canceller = (event: any) => {
-    return { cancel: !event.modal };
-  };
+    return { cancel: !event.modal }
+  }
 
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const hostUrl = extensionSDK?.lookerHostData?.hostUrl;
-    const el = ref.current;
+    const hostUrl = extensionSDK?.lookerHostData?.hostUrl
+    const el = ref.current
     if (el && hostUrl && dashboardId) {
-      el.innerHTML = "";
-      LookerEmbedSDK.init(hostUrl);
+      el.innerHTML = ''
+      LookerEmbedSDK.init(hostUrl)
       LookerEmbedSDK.createDashboardWithId(dashboardId)
         .withNext()
         // This can be removed if using a theme that has this setting
@@ -62,24 +57,24 @@ export const DashboardEmbed = ({
         .appendTo(el)
         // .on("dashboard:filters:changed", updateFilters.bind(null))
         // .on("dashboard:run:complete", updateFilters.bind(null))
-        .on("drillmenu:click", canceller)
-        .on("drillmodal:explore", canceller)
-        .on("dashboard:tile:explore", canceller)
-        .on("dashboard:tile:view", canceller)
+        .on('drillmenu:click', canceller)
+        .on('drillmodal:explore', canceller)
+        .on('dashboard:tile:explore', canceller)
+        .on('dashboard:tile:view', canceller)
         .build()
         .connect()
-        .then(setEmbedDashboard)
+        // .then(setEmbedDashboard)
         .catch((error: Error) => {
           // @TODO - This should probably throw a visible error
           // eslint-disable-next-line no-console
-          console.error("Connection error", error);
-        });
+          console.error('Connection error', error)
+        })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dashboardId]);
+  }, [dashboardId])
 
-  return <EmbedContainer ref={ref} height="100%" />;
-};
+  return <EmbedContainer ref={ref} height="100%" />
+}
 
 const EmbedContainer = styled(Layout)`
   > iframe {
@@ -87,4 +82,4 @@ const EmbedContainer = styled(Layout)`
     height: 100%;
     width: 100%;
   }
-`;
+`
